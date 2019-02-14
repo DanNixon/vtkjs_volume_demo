@@ -1,0 +1,6 @@
+flask
+flask_api
+flask_cors
+json_tricks
+numpy
+h5py

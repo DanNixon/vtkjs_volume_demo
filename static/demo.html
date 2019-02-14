@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
+    <title>Visualisation demo</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.5.1/dist/css/foundation.min.css" integrity="sha256-1mcRjtAxlSjp6XJBgrBeeCORfBp/ppyX4tsvpQVCcpA= sha384-b5S5X654rX3Wo6z5/hnQ4GBmKuIJKMPwrJXn52ypjztlnDK2w9+9hSMBz/asy9Gw sha512-M1VveR2JGzpgWHb0elGqPTltHK3xbvu3Brgjfg4cg5ZNtyyApxw/45yHYsZ/rCVbfoO5MSZxB241wWq642jLtA==" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css" />
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/foundation-sites@6.5.1/dist/js/foundation.min.js" integrity="sha256-WUKHnLrIrx8dew//IpSEmPN/NT3DGAEmIePQYIEJLLs= sha384-53StQWuVbn6figscdDC3xV00aYCPEz3srBdV/QGSXw3f19og3Tq2wTRe0vJqRTEO sha512-X9O+2f1ty1rzBJOC8AXBnuNUdyJg0m8xMKmbt9I3Vu/UOWmSg5zG+dtnje4wAZrKtkopz/PEDClHZ1LXx5IeOw==" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vtk.js"></script>
+  </head>
+
+  <body>
+    <script type="text/javascript">
+      const fullScreenRenderer = vtk.Rendering.Misc.vtkFullScreenRenderWindow.newInstance({
+        background: [0, 0, 0],
+      });
+      const renderer = fullScreenRenderer.getRenderer();
+      const renderWindow = fullScreenRenderer.getRenderWindow();
+
+      const reader = vtk.IO.Core.vtkHttpDataSetReader.newInstance();
+
+      const actor = vtk.Rendering.Core.vtkVolume.newInstance();
+      const mapper = vtk.Rendering.Core.vtkVolumeMapper.newInstance();
+      mapper.setSampleDistance(0.7);
+      actor.setMapper(mapper);
+
+      actor.getProperty().setScalarOpacityUnitDistance(0, 4.5);
+      actor.getProperty().setInterpolationTypeToLinear();
+      actor.getProperty().setUseGradientOpacity(0, true);
+      actor.getProperty().setGradientOpacityMinimumOpacity(0, 0.0);
+      actor.getProperty().setGradientOpacityMaximumOpacity(0, 0.8);
+      actor.getProperty().setShade(true);
+      actor.getProperty().setAmbient(0.2);
+      actor.getProperty().setDiffuse(0.7);
+      actor.getProperty().setSpecular(0.3);
+      actor.getProperty().setSpecularPower(4.0);
+
+      mapper.setInputConnection(reader.getOutputPort());
+
+      // setUrl is broken and insists on appending "/index.json" to everyting,
+      // fool it into thinking it is already there
+      reader
+        .setUrl('/data.zip?index.json&filename=data/psi_cylinder_processed.nxs&path=/entry/final_result_tomo/data', { fullPath: true, compression: 'zip', loadData: true })
+        .then(function() {
+          var range = reader.getOutputData().getPointData().getScalars().getRange()
+
+          const ctfun = vtk.Rendering.Core.vtkColorTransferFunction.newInstance();
+          ctfun.addRGBPoint(range[0], 0.0, 0.0, 0.0);
+          ctfun.addRGBPoint(range[1], 1.0, 1.0, 1.0);
+          actor.getProperty().setRGBTransferFunction(0, ctfun);
+
+          const ofun = vtk.Common.DataModel.vtkPiecewiseFunction.newInstance();
+          ofun.addPoint(range[0], 0.0);
+          ofun.addPoint(range[0] * 0.01, 0.05);
+          ofun.addPoint(range[1], 0.1);
+          actor.getProperty().setScalarOpacity(0, ofun);
+
+          actor.getProperty().setGradientOpacityMinimumValue(0, range[0]);
+          actor.getProperty().setGradientOpacityMaximumValue(0, range[1]);
+
+          renderer.addVolume(actor);
+          renderer.resetCamera();
+          renderer.updateLightsGeometryToFollowCamera();
+
+          renderWindow.render();
+
+          console.log("done");
+        });
+    </script>
+  </body>
+</html>
