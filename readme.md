@@ -17,3 +17,6 @@ Without Docker:
 pip install -r requirements.txt
 ./server.py
 ```
+
+A page will be served at `localhost:5000/demo.html` which renders the volume in
+the final output of the data file provided.
