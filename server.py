@@ -98,6 +98,7 @@ def zip_data():
 
     # Load volume array
     volume = load_volume_hdf5_array(filename, h5path)
+    print('Volume shape: {}'.format(volume.shape))
 
     # Create in memory Zip archive
     zip_buffer = BytesIO()

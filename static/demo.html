@@ -42,18 +42,23 @@
       reader
         .setUrl('/data.zip?index.json&filename=data/psi_cylinder_processed.nxs&path=/entry/final_result_tomo/data', { fullPath: true, compression: 'zip', loadData: true })
         .then(function() {
-          var range = reader.getOutputData().getPointData().getScalars().getRange()
+          const urlParams = new URLSearchParams(window.location.search);
+          const range = reader.getOutputData().getPointData().getScalars().getRange()
 
-          const ctfun = vtk.Rendering.Core.vtkColorTransferFunction.newInstance();
-          ctfun.addRGBPoint(range[0], 0.0, 0.0, 0.0);
-          ctfun.addRGBPoint(range[1], 1.0, 1.0, 1.0);
-          actor.getProperty().setRGBTransferFunction(0, ctfun);
+          const min = urlParams.has("min") ? parseFloat(urlParams.get("min")) : range[0];
+          const max = urlParams.has("max") ? parseFloat(urlParams.get("max")) : range[1];
+          console.log("min = " + min);
+          console.log("max = " + max);
 
-          const ofun = vtk.Common.DataModel.vtkPiecewiseFunction.newInstance();
-          ofun.addPoint(range[0], 0.0);
-          ofun.addPoint(range[0] * 0.01, 0.05);
-          ofun.addPoint(range[1], 0.1);
-          actor.getProperty().setScalarOpacity(0, ofun);
+          const colorTransferFunc = vtk.Rendering.Core.vtkColorTransferFunction.newInstance();
+          colorTransferFunc.addRGBPoint(min, 0.0, 0.0, 0.0);
+          colorTransferFunc.addRGBPoint(max, 1.0, 1.0, 1.0);
+          actor.getProperty().setRGBTransferFunction(0, colorTransferFunc);
+
+          const opacityFunc = vtk.Common.DataModel.vtkPiecewiseFunction.newInstance();
+          opacityFunc.addPoint(min, 0.0);
+          opacityFunc.addPoint(max, 0.5);
+          actor.getProperty().setScalarOpacity(0, opacityFunc);
 
           actor.getProperty().setGradientOpacityMinimumValue(0, range[0]);
           actor.getProperty().setGradientOpacityMaximumValue(0, range[1]);
